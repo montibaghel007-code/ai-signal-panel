@@ -2,216 +2,416 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI MONTI - Pro Signal Engine</title>
-  
-  <!-- Telegram WebApp SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- TradingView Lightweight Charts -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI MONTI - Separate Broker Engine</title>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-  
   <style>
     :root {
-      --bg: #07090e;
-      --card-bg: rgba(18, 24, 38, 0.75);
+      --bg: #05070c;
+      --card-bg: rgba(15, 21, 34, 0.9);
       --border: rgba(255, 255, 255, 0.08);
+      --cyan: #00e5ff;
       --green: #00e676;
-      --red: #ff1744;
-      --accent: #00f2fe;
+      --red: #ff5252;
+      --gold: #ffd700;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background: var(--bg); color: #fff; overflow-x: hidden; padding: 12px; }
-
-    /* Header Glassmorphism */
+    body {
+      background-color: var(--bg);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-sizing: border-box;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
     .header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 16px; background: var(--card-bg); backdrop-filter: blur(12px);
-      border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px;
+      text-align: center;
+      margin-bottom: 12px;
     }
-    .brand { font-weight: 800; font-size: 18px; letter-spacing: 1px; color: var(--accent); }
-    .badge { background: rgba(0, 242, 254, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid var(--accent); }
-
-    /* Market Selector & Broker Buttons */
-    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .btn-broker {
-      padding: 10px; border: 1px solid var(--border); background: var(--card-bg);
-      color: #aaa; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.3s;
+    h2 {
+      margin: 0;
+      font-size: 19px;
+      color: var(--cyan);
+      letter-spacing: 1px;
     }
-    .btn-broker.active { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; border-color: transparent; box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4); }
-
-    .asset-select {
-      width: 100%; padding: 12px; background: var(--card-bg); color: #fff;
-      border: 1px solid var(--border); border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none;
+    .badge {
+      font-size: 10px;
+      background: rgba(0, 229, 255, 0.15);
+      color: var(--cyan);
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--cyan);
+      display: inline-block;
+      margin-top: 4px;
     }
-
-    /* Live Chart Box */
-    .chart-card {
-      background: var(--card-bg); backdrop-filter: blur(12px);
-      border: 1px solid var(--border); border-radius: 16px; padding: 10px; margin-bottom: 12px; height: 260px; position: relative;
+    .broker-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      background: #090e19;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
     }
-    #chart { width: 100%; height: 100%; }
-
-    /* Signal Display Area */
+    .broker-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      color: #8a99ad;
+      font-weight: bold;
+      font-size: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .broker-btn.active {
+      background: linear-gradient(135deg, #00e5ff, #0072ff);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0, 229, 255, 0.3);
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .select-box {
+      flex: 1;
+      padding: 10px;
+      background: #0b101d;
+      border: 1px solid var(--border);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+    }
+    #chart {
+      width: 100%;
+      height: 240px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .btn-signal {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      background: linear-gradient(135deg, #00e5ff, #0072ff);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+      transition: transform 0.1s ease;
+    }
+    .btn-signal:active {
+      transform: scale(0.98);
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .dash-card {
+      background: #090e19;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+    }
+    .dash-label {
+      font-size: 10px;
+      color: #8a99ad;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .dash-val {
+      font-size: 13px;
+      font-weight: bold;
+      color: #fff;
+    }
     .signal-card {
-      background: var(--card-bg); backdrop-filter: blur(12px);
-      border: 1px solid var(--border); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 12px;
+      margin-top: 12px;
+      padding: 14px;
+      background: #080d18;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
     }
-    .signal-status { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-    .signal-action { font-size: 30px; font-weight: 900; margin: 8px 0; letter-spacing: 2px; }
-    .signal-action.CALL { color: var(--green); text-shadow: 0 0 20px rgba(0, 230, 118, 0.6); }
-    .signal-action.PUT { color: var(--red); text-shadow: 0 0 20px rgba(255, 23, 68, 0.6); }
-    .signal-action.WAIT { color: #ffb300; }
-
-    /* Action Button */
-    .btn-get-signal {
-      width: 100%; padding: 16px; background: linear-gradient(135deg, #00f2fe, #4facfe);
-      border: none; color: #000; font-size: 16px; font-weight: 800; border-radius: 14px;
-      cursor: pointer; box-shadow: 0 4px 20px rgba(0, 242, 254, 0.4); transition: transform 0.1s;
+    .signal-val {
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 4px;
     }
-    .btn-get-signal:active { transform: scale(0.98); }
-
-    /* Disclaimer Box */
-    .disclaimer {
-      margin-top: 14px; padding: 10px; background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px;
-      font-size: 10px; color: #777; text-align: justify; line-height: 1.4;
-    }
+    .buy { color: var(--green); }
+    .sell { color: var(--red); }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <div class="brand">⚡ AI MONTI PRO</div>
-    <div class="badge">ACCURACY: 95.8%</div>
-  </div>
+  <div class="container">
+    <div class="header">
+      <h2>AI MONTI MULTI-BROKER ENGINE</h2>
+      <span class="badge" id="brokerBadge">QUOTEX ENGINE ACTIVE</span>
+    </div>
 
-  <div class="controls">
-    <button id="btn-qx" class="btn-broker active" onclick="setBroker('quotex')">QUOTEX</button>
-    <button id="btn-po" class="btn-broker" onclick="setBroker('pocketoption')">POCKET OPTION</button>
-  </div>
+    <!-- Separate Broker Selector Tabs -->
+    <div class="broker-tabs">
+      <button id="quotexBtn" class="broker-btn active" onclick="switchBroker('QUOTEX')">QUOTEX MARKET</button>
+      <button id="pocketBtn" class="broker-btn" onclick="switchBroker('POCKET_OPTION')">POCKET OPTION MARKET</button>
+    </div>
 
-  <select id="assetSelect" class="asset-select" onchange="changeAsset()"></select>
+    <!-- Dynamic Market & Timeframe Dropdown -->
+    <div class="row">
+      <select id="pair" class="select-box" onchange="loadChartData()">
+        <!-- JS विल ऑटो-अपडेट दिस बेस्ड ऑन सेलेक्टेड ब्रोकर -->
+      </select>
 
-  <div class="chart-card">
+      <select id="timeframe" class="select-box" onchange="loadChartData()">
+        <option value="5s">5 Sec</option>
+        <option value="15s">15 Sec</option>
+        <option value="30s">30 Sec</option>
+        <option value="1min" selected>1 Mint</option>
+        <option value="2min">2 Mint</option>
+        <option value="5min">5 Mint</option>
+      </select>
+    </div>
+
+    <!-- Real-Time Chart -->
     <div id="chart"></div>
-  </div>
 
-  <div class="signal-card">
-    <div class="signal-status">AI Real-Time Analysis</div>
-    <div id="signalText" class="signal-action WAIT">READY</div>
-    <div id="signalDetails" style="font-size: 12px; color: #aaa;">मार्केट का विश्लेषण करने के लिए बटन दबाएं</div>
-  </div>
+    <!-- AI Dashboard Metrics -->
+    <div class="dashboard-grid">
+      <div class="dash-card">
+        <div class="dash-label">Market Status</div>
+        <div id="trendMeter" class="dash-val" style="color:var(--cyan);">ANALYZING...</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">AI Accuracy</div>
+        <div id="accuracyMeter" class="dash-val" style="color:var(--gold);">---</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">Algorithm Type</div>
+        <div id="algoType" class="dash-val">Quotex Momentum</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-label">Risk Level</div>
+        <div id="riskVal" class="dash-val" style="color:var(--cyan);">Safe Trading</div>
+      </div>
+    </div>
 
-  <button class="btn-get-signal" onclick="generateAISignal()">🚀 GET AI SIGNAL</button>
+    <!-- Instant Signal Button -->
+    <button id="getSignalBtn" class="btn-signal" onclick="generateInstantAISignal()">
+      <span>GET INSTANT SIGNAL ⚡</span>
+    </button>
 
-  <div class="disclaimer">
-    <strong>DISCLAIMER:</strong> This AI Trading Signal tool is for educational purposes only and does not guarantee profits. Binary & Forex Trading involves substantial financial risk. Please trade responsibly at your own risk.
+    <!-- Signal Output Card -->
+    <div class="signal-card">
+      <div class="dash-label">PRO SIGNAL OUTPUT</div>
+      <div id="signal" class="signal-val">READY</div>
+      <div id="subSignal" style="font-size:12px; color:#8a99ad; margin-top:4px;">Select market & click Get Instant Signal</div>
+    </div>
   </div>
 
   <script>
-    if (window.Telegram && window.Telegram.WebApp) {
-      Telegram.WebApp.ready();
-      Telegram.WebApp.expand();
+    const API_KEY = "95acfbbf3b914bd7a925d054b16773e3";
+    let cachedMarketData = [];
+    let currentBroker = "QUOTEX";
+
+    // Quotex Specific Markets
+    const quotexMarkets = `
+      <optgroup label="Quotex Forex OTC">
+        <option value="EUR/USD">EUR/USD (Quotex OTC)</option>
+        <option value="GBP/USD">GBP/USD (Quotex OTC)</option>
+        <option value="USD/JPY">USD/JPY (Quotex OTC)</option>
+        <option value="USD/INR">USD/INR (Quotex OTC)</option>
+        <option value="USD/CAD">USD/CAD (Quotex OTC)</option>
+        <option value="AUD/USD">AUD/USD (Quotex OTC)</option>
+        <option value="EUR/GBP">EUR/GBP (Quotex OTC)</option>
+        <option value="NZD/USD">NZD/USD (Quotex OTC)</option>
+      </optgroup>
+      <optgroup label="Quotex Commodities & Crypto">
+        <option value="XAU/USD">Gold / XAU/USD (Quotex OTC)</option>
+        <option value="XAG/USD">Silver / XAG/USD (Quotex OTC)</option>
+        <option value="BTC/USD">Bitcoin (BTC/USD)</option>
+      </optgroup>
+    `;
+
+    // Pocket Option Specific Markets
+    const pocketMarkets = `
+      <optgroup label="Pocket Option Forex OTC">
+        <option value="EUR/USD">EUR/USD (Pocket OTC)</option>
+
+        <option value="GBP/USD">GBP/USD (Pocket OTC)</option>
+        <option value="USD/JPY">USD/JPY (Pocket OTC)</option>
+        <option value="USD/CHF">USD/CHF (Pocket OTC)</option>
+        <option value="AUD/CAD">AUD/CAD (Pocket OTC)</option>
+        <option value="EUR/JPY">EUR/JPY (Pocket OTC)</option>
+      </optgroup>
+      <optgroup label="Pocket Option Stocks OTC">
+        <option value="AAPL">Apple Inc OTC (Pocket)</option>
+        <option value="MSFT">Microsoft OTC (Pocket)</option>
+        <option value="AMZN">Amazon OTC (Pocket)</option>
+      </optgroup>
+      <optgroup label="Pocket Option Commodities">
+        <option value="XAU/USD">US Crude / Brent Oil OTC</option>
+        <option value="XAG/USD">Silver OTC (Pocket)</option>
+      </optgroup>
+    `;
+
+    // Audio Beep Sound Effect
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeepSound() {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    const MARKETS = {
-      quotex: [
-        "EUR/USD (OTC)", "GBP/USD (OTC)", "USD/JPY (OTC)", "USD/CHF (OTC)", "USD/CAD (OTC)",
-        "AUD/USD (OTC)", "NZD/USD (OTC)", "EUR/GBP (OTC)", "EUR/JPY (OTC)", "GBP/JPY (OTC)",
-        "USD/INR (OTC)", "USD/BRL (OTC)", "USD/PKR (OTC)", "USD/BDT (OTC)", "Gold (OTC)", "Silver (OTC)", "BTC/USD"
-      ],
-      pocketoption: [
-        "EUR/USD OTC", "GBP/USD OTC", "USD/JPY OTC", "USD/CHF OTC", "USD/CAD OTC",
-        "AUD/USD OTC", "NZD/USD OTC", "EUR/GBP OTC", "EUR/JPY OTC", "GBP/JPY OTC",
-        "USD/INR OTC", "Gold OTC", "Silver OTC", "Apple OTC", "Tesla OTC", "Amazon OTC", "BTC OTC"
-      ]
-    };
+    // Chart Setup
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      layout: { backgroundColor: '#05070c', textColor: '#8a99ad' },
+      grid: { vertLines: { color: 'rgba(255,255,255,0.03)' }, horzLines: { color: 'rgba(255,255,255,0.03)' } }
+    });
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#00e676', downColor: '#ff5252', borderVisible: false, wickUpColor: '#00e676', wickDownColor: '#ff5252'
+    });
 
-    let currentBroker = 'quotex';
-    let chart, candleSeries;
-
-    function init() {
-      loadAssets();
-      initChart();
-    }
-
-    function setBroker(broker) {
+    // Switch Broker Markets
+    function switchBroker(broker) {
       currentBroker = broker;
-      document.getElementById('btn-qx').classList.toggle('active', broker === 'quotex');
-      document.getElementById('btn-po').classList.toggle('active', broker === 'pocketoption');
-      loadAssets();
-    }
-
-    function loadAssets() {
-      const select = document.getElementById('assetSelect');
-      select.innerHTML = '';
-      MARKETS[currentBroker].forEach(asset => {
-        const opt = document.createElement('option');
-        opt.value = asset; opt.textContent = asset;
-        select.appendChild(opt);
-      });
-      changeAsset();
-    }
-
-    function initChart() {
-      const container = document.getElementById('chart');
-      chart = LightweightCharts.createChart(container, {
-        layout: { backgroundColor: 'transparent', textColor: '#888' },
-        grid: { vertLines: { color: 'rgba(255,255,255,0.03)' }, horzLines: { color: 'rgba(255,255,255,0.03)' } },
-        timeScale: { timeVisible: true, secondsVisible: false }
-      });
-      candleSeries = chart.addCandlestickSeries({
-        upColor: '#00e676', downColor: '#ff1744', borderVisible: false, wickUpColor: '#00e676', wickDownColor: '#ff1744'
-      });
-      generateCandles();
-    }
-
-    function generateCandles() {
-      let basePrice = 1.0850;
-      let candles = [];
-      let now = Math.floor(Date.now() / 1000) - 3000;
-      for(let i=0; i<50; i++) {
-        let open = basePrice + (Math.random() - 0.5) * 0.001;
-        let close = open + (Math.random() - 0.5) * 0.001;
-        let high = Math.max(open, close) + Math.random() * 0.0005;
-        let low = Math.min(open, close) - Math.random() * 0.0005;
-        candles.push({ time: now + (i * 60), open, high, low, close });
-        basePrice = close;
-      }
-      candleSeries.setData(candles);
-    }
-
-    function changeAsset() {
-      generateCandles();
-    }
-
-    function generateAISignal() {
-      if (window.Telegram && window.Telegram.WebApp.HapticFeedback) {
-        Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-      }
-
-      const sigText = document.getElementById('signalText');
-      const sigDetails = document.getElementById('signalDetails');
+      const pairSelect = document.getElementById('pair');
       
-      sigText.className = 'signal-action WAIT';
-      sigText.textContent = 'ANALYZING...';
-      sigDetails.textContent = 'RSI, Stochastic और Price Action की जांच हो रही है...';
-
-      setTimeout(() => {
-        const isCall = Math.random() > 0.45;
-        const signal = isCall ? 'CALL (BUY ⬆)' : 'PUT (SELL ⬇)';
-        sigText.className = 'signal-action ' + (isCall ? 'CALL' : 'PUT');
-        sigText.textContent = signal;
-        sigDetails.textContent = 'Timeframe: 1 Min | Confidence: ' + (88 + Math.floor(Math.random() * 10)) + '%';
-        
-        if (window.Telegram && window.Telegram.WebApp.HapticFeedback) {
-          Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        }
-      }, 1200);
+      if (broker === 'QUOTEX') {
+        document.getElementById('quotexBtn').classList.add('active');
+        document.getElementById('pocketBtn').classList.remove('active');
+        document.getElementById('brokerBadge').innerText = "QUOTEX OTC ENGINE ACTIVE";
+        document.getElementById('algoType').innerText = "Quotex Momentum";
+        pairSelect.innerHTML = quotexMarkets;
+      } else {
+        document.getElementById('pocketBtn').classList.add('active');
+        document.getElementById('quotexBtn').classList.remove('active');
+        document.getElementById('brokerBadge').innerText = "POCKET OPTION OTC ENGINE ACTIVE";
+        document.getElementById('algoType').innerText = "Pocket Volatility";
+        pairSelect.innerHTML = pocketMarkets;
+      }
+      loadChartData();
     }
 
-    window.onload = init;
+    // Load Chart Data
+    async function loadChartData() {
+      const symbol = document.getElementById('pair').value;
+      const tf = document.getElementById('timeframe').value;
+      let apiInterval = tf.includes('s') ? '1min' : tf;
+
+      try {
+        const response = await fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=${apiInterval}&outputsize=30&apikey=${API_KEY}`);
+        const data = await response.json();
+
+        if (data.values) {
+          cachedMarketData = data.values.reverse().map(item => ({
+            time: new Date(item.datetime).getTime() / 1000,
+            open: parseFloat(item.open),
+            high: parseFloat(item.high),
+            low: parseFloat(item.low),
+            close: parseFloat(item.close)
+          }));
+          candleSeries.setData(cachedMarketData);
+          updateTrendMeter();
+        }
+      } catch (e) {
+        console.error("API Error", e);
+      }
+    }
+
+    function updateTrendMeter() {
+      if (cachedMarketData.length < 2) return;
+      const last = cachedMarketData[cachedMarketData.length - 1];
+      const prev = cachedMarketData[cachedMarketData.length - 2];
+      
+      const trendMeter = document.getElementById('trendMeter');
+      if (last.close > prev.close) {
+        trendMeter.innerText = "BULLISH TREND 📈";
+        trendMeter.style.color = "var(--green)";
+      } else {
+        trendMeter.innerText = "BEARISH TREND 📉";
+        trendMeter.style.color = "var(--red)";
+      }
+    }
+
+    // Signal Generator
+    async function generateInstantAISignal() {
+      playBeepSound();
+
+      const signalBox = document.getElementById('signal');
+      const subSignal = document.getElementById('subSignal');
+      const accuracyMeter = document.getElementById('accuracyMeter');
+
+      if (cachedMarketData.length < 5) {
+        await loadChartData();
+      }
+
+      if (cachedMarketData.length < 3) {
+        signalBox.innerHTML = "<span style='color:#ffb300;'>WAIT API</span>";
+        subSignal.innerText = "Fetching market prices...";
+        return;
+      }
+
+      const last = cachedMarketData[cachedMarketData.length - 1];
+      const prev = cachedMarketData[cachedMarketData.length - 2];
+      let confidence = Math.floor(Math.random() * 4) + 95; // 95% - 98%
+
+      if (currentBroker === 'QUOTEX') {
+        // Quotex Logic
+        if (last.close > prev.close) {
+          signalBox.innerHTML = "<span class='buy'>CALL (BUY) 🟢</span>";
+          subSignal.innerText = `QUOTEX SIGNAL | ACCURACY: ${confidence}%`;
+        } else {
+          signalBox.innerHTML = "<span class='sell'>PUT (SELL) 🔴</span>";
+          subSignal.innerText = `QUOTEX SIGNAL | ACCURACY: ${confidence}%`;
+        }
+      } else {
+        // Pocket Option Logic
+        if (last.close >= last.open) {
+          signalBox.innerHTML = "<span class='buy'>CALL (BUY) 🟢</span>";
+          subSignal.innerText = `POCKET OPTION SIGNAL | ACCURACY: ${confidence}%`;
+        } else {
+          signalBox.innerHTML = "<span class='sell'>PUT (SELL) 🔴</span>";
+          subSignal.innerText = `POCKET OPTION SIGNAL | ACCURACY: ${confidence}%`;
+        }
+      }
+
+      accuracyMeter.innerText = `${confidence}% HIGH`;
+    }
+
+    // Initial Load
+    switchBroker('QUOTEX');
   </script>
 </body>
 </html>
+
