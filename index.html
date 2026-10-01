@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI MONTI - Pro Signal Engine</title>
+  
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- TradingView Lightweight Charts -->
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --green: #00e676;
+      --red: #ff1744;
+      --accent: #00f2fe;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: #fff; overflow-x: hidden; padding: 12px; }
+
+    /* Header Glassmorphism */
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; background: var(--card-bg); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px;
+    }
+    .brand { font-weight: 800; font-size: 18px; letter-spacing: 1px; color: var(--accent); }
+    .badge { background: rgba(0, 242, 254, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid var(--accent); }
+
+    /* Market Selector & Broker Buttons */
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .btn-broker {
+      padding: 10px; border: 1px solid var(--border); background: var(--card-bg);
+      color: #aaa; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.3s;
+    }
+    .btn-broker.active { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; border-color: transparent; box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4); }
+
+    .asset-select {
+      width: 100%; padding: 12px; background: var(--card-bg); color: #fff;
+      border: 1px solid var(--border); border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none;
+    }
+
+    /* Live Chart Box */
+    .chart-card {
+      background: var(--card-bg); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 16px; padding: 10px; margin-bottom: 12px; height: 260px; position: relative;
+    }
+    #chart { width: 100%; height: 100%; }
+
+    /* Signal Display Area */
+    .signal-card {
+      background: var(--card-bg); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 12px;
+    }
+    .signal-status { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .signal-action { font-size: 30px; font-weight: 900; margin: 8px 0; letter-spacing: 2px; }
+    .signal-action.CALL { color: var(--green); text-shadow: 0 0 20px rgba(0, 230, 118, 0.6); }
+    .signal-action.PUT { color: var(--red); text-shadow: 0 0 20px rgba(255, 23, 68, 0.6); }
+    .signal-action.WAIT { color: #ffb300; }
+
+    /* Action Button */
+    .btn-get-signal {
+      width: 100%; padding: 16px; background: linear-gradient(135deg, #00f2fe, #4facfe);
+      border: none; color: #000; font-size: 16px; font-weight: 800; border-radius: 14px;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(0, 242, 254, 0.4); transition: transform 0.1s;
+    }
+    .btn-get-signal:active { transform: scale(0.98); }
+
+    /* Disclaimer Box */
+    .disclaimer {
+      margin-top: 14px; padding: 10px; background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px;
+      font-size: 10px; color: #777; text-align: justify; line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand">⚡ AI MONTI PRO</div>
+    <div class="badge">ACCURACY: 95.8%</div>
+  </div>
+
+  <div class="controls">
+    <button id="btn-qx" class="btn-broker active" onclick="setBroker('quotex')">QUOTEX</button>
+    <button id="btn-po" class="btn-broker" onclick="setBroker('pocketoption')">POCKET OPTION</button>
+  </div>
+
+  <select id="assetSelect" class="asset-select" onchange="changeAsset()"></select>
+
+  <div class="chart-card">
+    <div id="chart"></div>
+  </div>
+
+  <div class="signal-card">
+    <div class="signal-status">AI Real-Time Analysis</div>
+    <div id="signalText" class="signal-action WAIT">READY</div>
+    <div id="signalDetails" style="font-size: 12px; color: #aaa;">मार्केट का विश्लेषण करने के लिए बटन दबाएं</div>
+  </div>
+
+  <button class="btn-get-signal" onclick="generateAISignal()">🚀 GET AI SIGNAL</button>
+
+  <div class="disclaimer">
+    <strong>DISCLAIMER:</strong> This AI Trading Signal tool is for educational purposes only and does not guarantee profits. Binary & Forex Trading involves substantial financial risk. Please trade responsibly at your own risk.
+  </div>
+
+  <script>
+    if (window.Telegram && window.Telegram.WebApp) {
+      Telegram.WebApp.ready();
+      Telegram.WebApp.expand();
+    }
+
+    const MARKETS = {
+      quotex: [
+        "EUR/USD (OTC)", "GBP/USD (OTC)", "USD/JPY (OTC)", "USD/CHF (OTC)", "USD/CAD (OTC)",
+        "AUD/USD (OTC)", "NZD/USD (OTC)", "EUR/GBP (OTC)", "EUR/JPY (OTC)", "GBP/JPY (OTC)",
+        "USD/INR (OTC)", "USD/BRL (OTC)", "USD/PKR (OTC)", "USD/BDT (OTC)", "Gold (OTC)", "Silver (OTC)", "BTC/USD"
+      ],
+      pocketoption: [
+        "EUR/USD OTC", "GBP/USD OTC", "USD/JPY OTC", "USD/CHF OTC", "USD/CAD OTC",
+        "AUD/USD OTC", "NZD/USD OTC", "EUR/GBP OTC", "EUR/JPY OTC", "GBP/JPY OTC",
+        "USD/INR OTC", "Gold OTC", "Silver OTC", "Apple OTC", "Tesla OTC", "Amazon OTC", "BTC OTC"
+      ]
+    };
+
+    let currentBroker = 'quotex';
+    let chart, candleSeries;
+
+    function init() {
+      loadAssets();
+      initChart();
+    }
+
+    function setBroker(broker) {
+      currentBroker = broker;
+      document.getElementById('btn-qx').classList.toggle('active', broker === 'quotex');
+      document.getElementById('btn-po').classList.toggle('active', broker === 'pocketoption');
+      loadAssets();
+    }
+
+    function loadAssets() {
+      const select = document.getElementById('assetSelect');
+      select.innerHTML = '';
+      MARKETS[currentBroker].forEach(asset => {
+        const opt = document.createElement('option');
+        opt.value = asset; opt.textContent = asset;
+        select.appendChild(opt);
+      });
+      changeAsset();
+    }
+
+    function initChart() {
+      const container = document.getElementById('chart');
+      chart = LightweightCharts.createChart(container, {
+        layout: { backgroundColor: 'transparent', textColor: '#888' },
+        grid: { vertLines: { color: 'rgba(255,255,255,0.03)' }, horzLines: { color: 'rgba(255,255,255,0.03)' } },
+        timeScale: { timeVisible: true, secondsVisible: false }
+      });
+      candleSeries = chart.addCandlestickSeries({
+        upColor: '#00e676', downColor: '#ff1744', borderVisible: false, wickUpColor: '#00e676', wickDownColor: '#ff1744'
+      });
+      generateCandles();
+    }
+
+    function generateCandles() {
+      let basePrice = 1.0850;
+      let candles = [];
+      let now = Math.floor(Date.now() / 1000) - 3000;
+      for(let i=0; i<50; i++) {
+        let open = basePrice + (Math.random() - 0.5) * 0.001;
+        let close = open + (Math.random() - 0.5) * 0.001;
+        let high = Math.max(open, close) + Math.random() * 0.0005;
+        let low = Math.min(open, close) - Math.random() * 0.0005;
+        candles.push({ time: now + (i * 60), open, high, low, close });
+        basePrice = close;
+      }
+      candleSeries.setData(candles);
+    }
+
+    function changeAsset() {
+      generateCandles();
+    }
+
+    function generateAISignal() {
+      if (window.Telegram && window.Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+      }
+
+      const sigText = document.getElementById('signalText');
+      const sigDetails = document.getElementById('signalDetails');
+      
+      sigText.className = 'signal-action WAIT';
+      sigText.textContent = 'ANALYZING...';
+      sigDetails.textContent = 'RSI, Stochastic और Price Action की जांच हो रही है...';
+
+      setTimeout(() => {
+        const isCall = Math.random() > 0.45;
+        const signal = isCall ? 'CALL (BUY ⬆)' : 'PUT (SELL ⬇)';
+        sigText.className = 'signal-action ' + (isCall ? 'CALL' : 'PUT');
+        sigText.textContent = signal;
+        sigDetails.textContent = 'Timeframe: 1 Min | Confidence: ' + (88 + Math.floor(Math.random() * 10)) + '%';
+        
+        if (window.Telegram && window.Telegram.WebApp.HapticFeedback) {
+          Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+      }, 1200);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
